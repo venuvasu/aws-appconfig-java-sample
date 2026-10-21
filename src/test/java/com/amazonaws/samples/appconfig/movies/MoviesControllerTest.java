@@ -33,7 +33,7 @@ public class MoviesControllerTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         moviesController = new MoviesController();
         moviesController.env = env;
     }

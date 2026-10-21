@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.appconfig.AppConfigClient;
 import software.amazon.awssdk.services.appconfig.model.GetConfigurationResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -111,7 +111,7 @@ public class MoviesController {
 
     @RequestMapping(value = "/movies/{movie}/edit", method = POST)
     public String processUpdateMovie(@Valid Movie movie, BindingResult result, @PathVariable("movieId") int movieId) {
-        if (!MovieUtils.isValidMovieName(movie.getMovieName())) {
+        if (!MovieUtils.isValidMovie(movie.getMovieName(), movieId)) {
             result.rejectValue("name", "error.name", "Invalid movie name");
             return "editMovieForm";
         }

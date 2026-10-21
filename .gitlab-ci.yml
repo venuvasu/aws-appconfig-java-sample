@@ -17,7 +17,7 @@ variables:
     -DinstallAtEnd=true
     -DdeployAtEnd=true
 
-  BUILD_IMAGE: maven:3.8-openjdk-8
+  BUILD_IMAGE: maven:3.9-amazoncorretto-21
 
 stages:
   - .pre
@@ -32,13 +32,9 @@ detect-java-version:
   script:
     - apk add --no-cache grep
     - |
-      if grep -q "<java.version>17</java.version>\|<maven.compiler.source>17</maven.compiler.source>\|<maven.compiler.target>17</maven.compiler.target>" pom.xml; then
-        echo "BUILD_IMAGE=maven:3.8-openjdk-17" > build.env
-        echo "Detected Java 17 in pom.xml - Post-transformation"
-      else
-        echo "BUILD_IMAGE=maven:3.8-openjdk-8" > build.env
-        echo "Detected Java 8 in pom.xml - Pre-transformation"
-      fi
+      grep -q "<java.version>21</java.version>" pom.xml || { echo "Expected Java 21 in pom.xml"; exit 1; }
+      echo "BUILD_IMAGE=maven:3.9-amazoncorretto-21" > build.env
+      echo "Detected Java 21 in pom.xml"
     - cat build.env
   artifacts:
     reports:
@@ -53,10 +49,10 @@ install-dependency:
     - detect-java-version
   script:
     - mvn install:install-file 
-      -Dfile=./movie-service-utils/built-library/0_1_0/movie-service-utils-0.1.0.jar 
+      -Dfile=./movie-service-utils/built-library/0_3_0/movie-service-utils-0.3.0.jar 
       -DgroupId=com.amazonaws.samples 
       -DartifactId=movie-service-utils 
-      -Dversion=0.1.0 
+      -Dversion=0.3.0 
       -Dpackaging=jar
   cache:
     paths:
@@ -119,14 +115,7 @@ package:
   script:
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$DOCKER_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - |
-      if grep -q "<java.version>17</java.version>\|<maven.compiler.source>17</maven.compiler.source>\|<maven.compiler.target>17</maven.compiler.target>" pom.xml; then
-        echo "Detected Java 17 in pom.xml - Generating Dockerfile for Java 17"
-        sed 's/maven:3.6.1-amazoncorretto-8/maven:3.8-openjdk-17/g' Dockerfile > Dockerfile.dynamic
-      else
-        echo "Detected Java 8 in pom.xml - Using original Dockerfile for Java 8"
-        cp Dockerfile Dockerfile.dynamic
-      fi
+    - cp Dockerfile Dockerfile.dynamic
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/Dockerfile.dynamic"
@@ -147,15 +136,8 @@ q-code-transformation:
     - detect-java-version
     - install-dependency
   script:
-    - |
-      if grep -q "<java.version>17</java.version>\|<maven.compiler.source>17</maven.compiler.source>\|<maven.compiler.target>17</maven.compiler.target>" pom.xml; then
-        echo "Post-transformation detected - skipping dependency copy"
-        mvn $MAVEN_CLI_OPTS verify
-      else
-        echo "Pre-transformation detected - running full Q transformation"
-        mvn $MAVEN_CLI_OPTS verify
-        mvn $MAVEN_CLI_OPTS dependency:copy-dependencies -DoutputDirectory=dependencies -Dmdep.useRepositoryLayout=true -Dmdep.copyPom=true -Dmdep.addParentPoms=true
-      fi
+    - mvn $MAVEN_CLI_OPTS verify
+    - mvn $MAVEN_CLI_OPTS dependency:copy-dependencies -DoutputDirectory=dependencies -Dmdep.useRepositoryLayout=true -Dmdep.copyPom=true -Dmdep.addParentPoms=true
   cache:
     paths:
       - .m2/repository/
@@ -166,6 +148,6 @@ q-code-transformation:
       - dependencies/*
     when: on_success
   rules:
-    - if: $CI_COMMIT_REF_NAME =~ /^q\/transform-/ && $CI_PIPELINE_SOURCE == 'push' && $BUILD_IMAGE !~ /openjdk-17/
+    - if: $CI_COMMIT_REF_NAME =~ /^q\/transform-/ && $CI_PIPELINE_SOURCE == 'push'
       when: always
     - when: never

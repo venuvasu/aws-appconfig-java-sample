@@ -7,9 +7,9 @@ on:
 
 env:
    MAVEN_CLI_OPTS: >-
-     -Djava.version=${{ contains(github.event.head_commit.message, 'Code transformation completed') && '17' || '1.8' }}
-     -Dmaven.compiler.source=${{ contains(github.event.head_commit.message, 'Code transformation completed') && '17' || '1.8' }}
-     -Dmaven.compiler.target=${{ contains(github.event.head_commit.message, 'Code transformation completed') && '17' || '1.8' }}
+     -Djava.version=21
+     -Dmaven.compiler.source=21
+     -Dmaven.compiler.target=21
 
 jobs:
   q-code-transformation:
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          java-version: ${{ contains(github.event.head_commit.message, 'Code transformation completed') && '17' || '8' }}
+          java-version: 21
           distribution: 'temurin'
 
       - name: Cache Maven dependencies
@@ -30,22 +30,14 @@ jobs:
 
       - name: Install movie-service-utils dependency
         run: |
-          echo "Installing both versions of movie-service-utils JAR to local Maven repository..."
-          # Install Java 8 version
+          echo "Installing movie-service-utils JAR to local Maven repository..."
+          # Install Java 21 version
           mvn install:install-file \
-            -Dfile=./movie-service-utils/built-library/0_1_0/movie-service-utils-0.1.0.jar \
+            -Dfile=./movie-service-utils/built-library/0_3_0/movie-service-utils-0.3.0.jar \
             -DgroupId=com.amazonaws.samples \
             -DartifactId=movie-service-utils \
-            -Dversion=0.1.0 \
+            -Dversion=0.3.0 \
             -Dpackaging=jar
-          
-          # # Install Java 17 version
-          # mvn install:install-file \
-          #   -Dfile=./movie-service-utils/built-library/0_2_0/movie-service-utils-0.2.0.jar \
-          #   -DgroupId=com.amazonaws.samples \
-          #   -DartifactId=movie-service-utils \
-          #   -Dversion=0.2.0 \
-          #   -Dpackaging=jar
 
       - name: Build and copy dependencies
         run: |
@@ -63,7 +55,6 @@ jobs:
         run: |
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit message: ${{ github.event.head_commit.message }}"
-          echo "Java version logic result: ${{ contains(github.event.head_commit.message, 'Code transformation completed') && '17' || '8' }}"
           echo "Local Maven repository contents:"
           find ~/.m2/repository/com/amazonaws/samples -name "*.jar" 2>/dev/null || echo "No movie-service-utils found in local repo"
           java -version
