@@ -1,6 +1,6 @@
-FROM maven:3.6.1-amazoncorretto-8 as build
+FROM maven:3.9-amazoncorretto-21 as build
 
-ENV MAVEN_VERSION 3.6.1
+ENV MAVEN_VERSION 3.9.9
 ENV MAVEN_HOME /usr/lib/mvn
 ENV PATH $MAVEN_HOME/bin:$PATH
 
@@ -12,7 +12,7 @@ COPY src src
 RUN mvn install -DskipTests
 RUN mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
-FROM maven:3.6.1-amazoncorretto-8
+FROM maven:3.9-amazoncorretto-21
 ARG DEPENDENCY=/workspace/app/target/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
